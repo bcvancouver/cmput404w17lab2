@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import socket
+import os, sys, select
 
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -11,6 +12,9 @@ serverSocket.listen(5)
 while True:
     (incomingSocket, address) = serverSocket.accept()
     print "We got a connection from %s" % (str(address))
+    if os.fork() != 0:
+        continue 
+    
     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # socket.AF_INET indicates that we want an IPv4 socket
     # socket.SOCK_STREAM indicates that we want a TCP socket
@@ -35,8 +39,10 @@ while True:
             if (part):
                 clientSocket.sendall(part)
                 request.extend(part)
-            else:
+            elif part is None:
                 break
+            else:
+                exit(0)
 
         if len(request) > 0:
             print request
@@ -53,7 +59,14 @@ while True:
             if (part):
                 incomingSocket.sendall(part)
                 response.extend(part)
-            else:
+            elif part is None:
                 break
+            else:
+                exit(0)
         if len(response) > 0:
             print response
+        select.select(
+            [incomingSocket, clientSocket], # read
+            [],                             # write
+            [incomingSocket, clientSocket], # exceptions
+            1.0) # timeout
