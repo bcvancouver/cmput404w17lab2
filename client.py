@@ -23,6 +23,3 @@ while True:
         break
 
 print response
-
-
-
